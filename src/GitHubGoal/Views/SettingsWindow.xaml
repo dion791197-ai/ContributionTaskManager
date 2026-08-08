@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="GitHubGoal.Views.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,*">
+
+        <!-- Custom caption strip: the window is frameless like the widget. -->
+        <Grid x:Name="TitleBar"
+              Grid.Row="0"
+              Height="42"
+              Padding="16,0"
+              ColumnDefinitions="*,Auto">
+            <TextBlock VerticalAlignment="Center"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       Text="Settings" />
+
+            <Button Grid.Column="1"
+                    Style="{StaticResource GlassIconButtonStyle}"
+                    Click="OnCloseClick"
+                    AutomationProperties.Name="Close settings"
+                    ToolTipService.ToolTip="Close">
+                <FontIcon Glyph="&#xE711;" FontSize="12" />
+            </Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Padding="16,0,16,16">
+            <StackPanel Spacing="18">
+
+                <!-- ==================== GitHub ==================== -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="GitHub"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource TextMutedBrush}" />
+
+                    <Border Padding="14"
+                            CornerRadius="8"
+                            Background="{ThemeResource TrackBrush}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource DividerBrush}">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="13"
+                                           Text="{x:Bind ViewModel.ConnectionStatus, Mode=OneWay}" />
+                                <Button Grid.Column="1"
+                                        Content="Disconnect"
+                                        FontSize="12"
+                                        CornerRadius="6"
+                                        Command="{x:Bind ViewModel.DisconnectCommand}"
+                                        IsEnabled="{x:Bind ViewModel.IsConnected, Mode=OneWay}" />
+                            </Grid>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="OAuth Client ID"
+                                           FontSize="12"
+                                           Foreground="{ThemeResource TextSecondaryBrush}" />
+                                <TextBox Text="{x:Bind ViewModel.OauthClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         PlaceholderText="Iv1.0123456789abcdef"
+                                         FontSize="12"
+                                         AutomationProperties.Name="GitHub OAuth client ID" />
+                                <TextBlock FontSize="11"
+                                           TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextMutedBrush}"
+                                           Text="Create an OAuth App at github.com/settings/developers and enable device flow. Only the Client ID is needed — there is no secret to store." />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ==================== Daily goal ==================== -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Daily goal"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource TextMutedBrush}" />
+
+                    <Border Padding="14"
+                            CornerRadius="8"
+                            Background="{ThemeResource TrackBrush}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource DividerBrush}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Contributions per day" FontSize="13" />
+                                <TextBlock FontSize="11"
+                                           Foreground="{ThemeResource TextMutedBrush}"
+                                           Text="Pick a preset or type any number." />
+                            </StackPanel>
+
+                            <NumberBox Grid.Column="1"
+                                       Width="118"
+                                       Minimum="1"
+                                       Maximum="999"
+                                       SpinButtonPlacementMode="Compact"
+                                       Value="{x:Bind ViewModel.DailyGoal, Mode=TwoWay}"
+                                       AutomationProperties.Name="Daily contribution goal" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Preset shortcuts -->
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.GoalPresets}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="6" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:Int32">
+                                <Button Content="{x:Bind}"
+                                        MinWidth="44"
+                                        FontSize="12"
+                                        CornerRadius="6"
+                                        Click="OnGoalPresetClick" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- ==================== Appearance ==================== -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Appearance"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource TextMutedBrush}" />
+
+                    <Border Padding="14"
+                            CornerRadius="8"
+                            Background="{ThemeResource TrackBrush}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource DividerBrush}">
+                        <StackPanel Spacing="14">
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Theme" FontSize="13" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1"
+                                          Width="140"
+                                          SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}"
+                                          AutomationProperties.Name="Theme">
+                                    <ComboBoxItem Content="System" />
+                                    <ComboBoxItem Content="Light" />
+                                    <ComboBoxItem Content="Dark" />
+                                </ComboBox>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Accent" FontSize="13" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1"
+                                          Width="140"
+                                          SelectedIndex="{x:Bind ViewModel.AccentIndex, Mode=TwoWay}"
+                                          AutomationProperties.Name="Accent colour">
+                                    <ComboBoxItem Content="GitHub green" />
+                                    <ComboBoxItem Content="System" />
+                                    <ComboBoxItem Content="Custom" />
+                                </ComboBox>
+                            </Grid>
+
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Glass intensity" FontSize="13" />
+                                <Slider Minimum="0"
+                                        Maximum="1"
+                                        StepFrequency="0.05"
+                                        Value="{x:Bind ViewModel.GlassIntensity, Mode=TwoWay}"
+                                        AutomationProperties.Name="Glass intensity" />
+                            </StackPanel>
+
+                            <ToggleSwitch Header="Reduce motion"
+                                          OnContent="On"
+                                          OffContent="Off"
+                                          IsOn="{x:Bind ViewModel.ReduceMotion, Mode=TwoWay}"
+                                          AutomationProperties.Name="Reduce motion" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ==================== Behaviour ==================== -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Behaviour"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource TextMutedBrush}" />
+
+                    <Border Padding="14"
+                            CornerRadius="8"
+                            Background="{ThemeResource TrackBrush}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource DividerBrush}">
+                        <StackPanel Spacing="14">
+
+                            <CheckBox Content="Always on top"
+                                      IsChecked="{x:Bind ViewModel.AlwaysOnTop, Mode=TwoWay}" />
+
+                            <CheckBox Content="Launch at Windows startup"
+                                      IsChecked="{x:Bind ViewModel.LaunchAtStartup, Mode=TwoWay}" />
+
+                            <CheckBox Content="Auto refresh"
+                                      IsChecked="{x:Bind ViewModel.AutoRefresh, Mode=TwoWay}" />
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Refresh interval (minutes)"
+                                           FontSize="13"
+                                           VerticalAlignment="Center" />
+                                <NumberBox Grid.Column="1"
+                                           Width="118"
+                                           Minimum="1"
+                                           Maximum="1440"
+                                           SpinButtonPlacementMode="Compact"
+                                           IsEnabled="{x:Bind ViewModel.AutoRefresh, Mode=OneWay}"
+                                           Value="{x:Bind ViewModel.RefreshIntervalMinutes, Mode=TwoWay}"
+                                           AutomationProperties.Name="Refresh interval in minutes" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

@@ -1,0 +1,35 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+*.user
+*.suo
+
+# The runtime log our custom Main writes next to the executable
+startup-error.log
+
+# Generated PRI staging and output. resources.pri is produced by
+# tools/GeneratePri.targets into obj/ and copied to the output folder on every build.
+pristage/
+resources.pri
+
+# NuGet
+*.nupkg
+packages/
+
+# Rider / VS / VS Code
+.vs/
+.idea/
+*.DotSettings.user
+
+# OS
+Thumbs.db
+desktop.ini
+
+# NOTE ON SECRETS
+# The GitHub access token is never written to this repository: it lives only in
+# Windows Credential Manager (see Services/CredentialService.cs). Application
+# settings go to %LOCALAPPDATA%\GitHubGoal\settings.json, outside the repo, and
+# hold no secrets — the OAuth Client ID stored there is public by design.

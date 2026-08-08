@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.ThemeDictionaries>
+
+        <!-- ============================ DARK ============================ -->
+        <ResourceDictionary x:Key="Default">
+
+            <!-- The card tint that sits over the acrylic backdrop. Kept low so the
+                 desktop still reads through; the sheen below supplies the "glass". -->
+            <LinearGradientBrush x:Key="GlassCardBrush" StartPoint="0,0" EndPoint="0.85,1">
+                <GradientStop Offset="0" Color="#1FFFFFFF" />
+                <GradientStop Offset="0.45" Color="#0DFFFFFF" />
+                <GradientStop Offset="1" Color="#08FFFFFF" />
+            </LinearGradientBrush>
+
+            <!-- Rim light: brightest along the top edge, fading down the sides. -->
+            <LinearGradientBrush x:Key="GlassBorderBrush" StartPoint="0.1,0" EndPoint="0.9,1">
+                <GradientStop Offset="0" Color="#59FFFFFF" />
+                <GradientStop Offset="0.35" Color="#1FFFFFFF" />
+                <GradientStop Offset="1" Color="#14FFFFFF" />
+            </LinearGradientBrush>
+
+            <!-- Specular sweep across the upper-left, the signature liquid-glass cue. -->
+            <LinearGradientBrush x:Key="GlassSheenBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Offset="0" Color="#26FFFFFF" />
+                <GradientStop Offset="0.28" Color="#0AFFFFFF" />
+                <GradientStop Offset="0.55" Color="#00FFFFFF" />
+            </LinearGradientBrush>
+
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FAFFFFFF" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B8FFFFFF" />
+            <SolidColorBrush x:Key="TextMutedBrush" Color="#7AFFFFFF" />
+            <SolidColorBrush x:Key="TextGoalBrush" Color="#66FFFFFF" />
+
+            <SolidColorBrush x:Key="TrackBrush" Color="#1AFFFFFF" />
+            <SolidColorBrush x:Key="HoverOverlayBrush" Color="#1FFFFFFF" />
+            <SolidColorBrush x:Key="PressedOverlayBrush" Color="#0AFFFFFF" />
+            <SolidColorBrush x:Key="DividerBrush" Color="#14FFFFFF" />
+
+        </ResourceDictionary>
+
+        <!-- ============================ LIGHT =========================== -->
+        <ResourceDictionary x:Key="Light">
+
+            <LinearGradientBrush x:Key="GlassCardBrush" StartPoint="0,0" EndPoint="0.85,1">
+                <GradientStop Offset="0" Color="#B8FFFFFF" />
+                <GradientStop Offset="0.45" Color="#8CFFFFFF" />
+                <GradientStop Offset="1" Color="#70FFFFFF" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="GlassBorderBrush" StartPoint="0.1,0" EndPoint="0.9,1">
+                <GradientStop Offset="0" Color="#E0FFFFFF" />
+                <GradientStop Offset="0.35" Color="#5CFFFFFF" />
+                <GradientStop Offset="1" Color="#2E000000" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="GlassSheenBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Offset="0" Color="#8AFFFFFF" />
+                <GradientStop Offset="0.28" Color="#1FFFFFFF" />
+                <GradientStop Offset="0.55" Color="#00FFFFFF" />
+            </LinearGradientBrush>
+
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F21B1F24" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B01B1F24" />
+            <SolidColorBrush x:Key="TextMutedBrush" Color="#7A1B1F24" />
+            <SolidColorBrush x:Key="TextGoalBrush" Color="#5C1B1F24" />
+
+            <SolidColorBrush x:Key="TrackBrush" Color="#1F000000" />
+            <SolidColorBrush x:Key="HoverOverlayBrush" Color="#14000000" />
+            <SolidColorBrush x:Key="PressedOverlayBrush" Color="#0A000000" />
+            <SolidColorBrush x:Key="DividerBrush" Color="#14000000" />
+
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- ===================== shared (theme-agnostic) ==================== -->
+
+    <!-- GitHub's contribution green, used sparingly: progress, completion, accents. -->
+    <Color x:Key="AccentColor">#2EA043</Color>
+    <Color x:Key="AccentBrightColor">#3FB950</Color>
+
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+
+    <LinearGradientBrush x:Key="ProgressFillBrush" StartPoint="0,0" EndPoint="1,0.6">
+        <GradientStop Offset="0" Color="#2EA043" />
+        <GradientStop Offset="0.6" Color="#3FB950" />
+        <GradientStop Offset="1" Color="#56D364" />
+    </LinearGradientBrush>
+
+    <!-- Glassy circular button for the header actions. -->
+    <Style x:Key="GlassIconButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="Foreground" Value="{ThemeResource TextSecondaryBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="Root"
+                          Background="Transparent"
+                          CornerRadius="15">
+
+                        <!-- Separate layer so hover can fade in without disturbing content. -->
+                        <Border x:Name="Overlay"
+                                CornerRadius="15"
+                                Opacity="0"
+                                Background="{ThemeResource HoverOverlayBrush}"
+                                BorderThickness="1"
+                                BorderBrush="{ThemeResource DividerBrush}" />
+
+                        <ContentPresenter x:Name="Presenter"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Content="{TemplateBinding Content}"
+                                          Foreground="{TemplateBinding Foreground}" />
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Overlay"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.15" />
+                                    </Storyboard>
+                                </VisualState>
+
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Overlay"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.05" />
+                                        <DoubleAnimation Storyboard.TargetName="Presenter"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0.6" Duration="0:0:0.05" />
+                                    </Storyboard>
+                                </VisualState>
+
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Presenter"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0.35" Duration="0" />
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

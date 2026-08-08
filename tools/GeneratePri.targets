@@ -1,0 +1,71 @@
+<Project>
+
+  <!--
+    Generates resources.pri for an unpackaged WinUI 3 app using only the .NET SDK
+    and the Microsoft.Windows.SDK.BuildTools NuGet package.
+
+    Why this exists: the Windows App SDK's built-in PRI generation
+    (MrtCore.PriGen.targets) loads Microsoft.Build.Packaging.Pri.Tasks.dll, which
+    ships with Visual Studio and is absent from a standalone `dotnet` install.
+    We therefore set EnableCoreMrtTooling=false in the project and drive
+    makepri.exe ourselves here.
+
+    resources.pri is not optional: without it, merging XamlControlsResources in
+    App.xaml fails at startup with a stowed COM exception (0xc000027b) and the
+    process dies before any managed handler can report it.
+  -->
+
+  <PropertyGroup>
+    <MakePriExe>$(WindowsSDKBuildToolsBinVersionedArchFolder)\makepri.exe</MakePriExe>
+    <PriStageDir>$(IntermediateOutputPath)pristage\</PriStageDir>
+    <PriConfigFile>$(MSBuildThisFileDirectory)priconfig.xml</PriConfigFile>
+    <GeneratedPriFile>$(IntermediateOutputPath)resources.pri</GeneratedPriFile>
+  </PropertyGroup>
+
+  <!-- Declared at project scope so the target can use them for up-to-date checks. -->
+  <ItemGroup>
+    <PriSourceAsset Include="$(MSBuildProjectDirectory)\Assets\**\*" />
+  </ItemGroup>
+
+  <Target Name="GenerateResourcesPri"
+          AfterTargets="Build"
+          Condition="'$(EnableCoreMrtTooling)' == 'false'"
+          Inputs="@(PriSourceAsset);$(PriConfigFile);$(MSBuildThisFileFullPath)"
+          Outputs="$(OutDir)resources.pri">
+
+    <Error Condition="!Exists('$(MakePriExe)')"
+           Text="makepri.exe not found at '$(MakePriExe)'. Ensure the Microsoft.Windows.SDK.BuildTools package is referenced." />
+
+    <!--
+      Stage the inputs: our own assets, plus the Windows App SDK's prebuilt .pri
+      files (Microsoft.UI.pri, Microsoft.UI.Xaml.Controls.pri) so their resource
+      maps get merged into ours. Deliberately excludes the loose files the SDK
+      copies to the output, which its .pri files already index.
+    -->
+    <ItemGroup>
+      <SdkPriFile Include="$(OutDir)*.pri" Exclude="$(OutDir)resources.pri" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(PriStageDir)" />
+    <MakeDir Directories="$(PriStageDir)Assets" />
+
+    <Copy SourceFiles="@(PriSourceAsset)"
+          DestinationFiles="@(PriSourceAsset->'$(PriStageDir)Assets\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SdkPriFile)" DestinationFolder="$(PriStageDir)" />
+
+    <!-- /o overwrites; makepri refuses to write over an existing index otherwise. -->
+    <Exec Command="&quot;$(MakePriExe)&quot; new /pr &quot;$(PriStageDir.TrimEnd('\'))&quot; /cf &quot;$(PriConfigFile)&quot; /of &quot;$(GeneratedPriFile)&quot; /in $(AssemblyName) /o"
+          StandardOutputImportance="low"
+          ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="MakePriOutput" />
+    </Exec>
+
+    <Copy SourceFiles="$(GeneratedPriFile)" DestinationFolder="$(OutDir)" />
+    <Message Importance="high" Text="GenerateResourcesPri -> $(OutDir)resources.pri" />
+
+    <ItemGroup>
+      <FileWrites Include="$(GeneratedPriFile)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

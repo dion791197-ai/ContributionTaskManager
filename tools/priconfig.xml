@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  PRI config used by tools\GeneratePri.targets to build resources.pri without
+  Visual Studio.
+
+  Two things differ from a stock `makepri createconfig` output:
+
+  1. There is no <packaging> block. The default config auto-splits each language
+     into a sibling resources.language-XX.pri "resource pack". Packaged apps get
+     those deployed alongside them; an unpackaged app only ever loads
+     resources.pri, so the split would silently drop every non-English string.
+     Keeping one file costs some size and buys correct text on any Windows UI
+     language.
+
+  2. It is run against a staged folder (our Assets plus the Windows App SDK's
+     prebuilt .pri files) rather than the build output. Indexing the build
+     output directly makes the folder indexer and the PRI indexer both claim
+     files like Microsoft.UI.Xaml/Assets/NoiseAsset_256X256_PNG.png, which
+     fails with "PRI175: Duplicate Entry".
+-->
+<resources targetOsVersion="10.0.0" majorVersion="1">
+  <index root="\" startIndexAt="\">
+    <default>
+      <qualifier name="Language" value="en-US" />
+      <qualifier name="Contrast" value="standard" />
+      <qualifier name="Scale" value="100" />
+      <qualifier name="HomeRegion" value="001" />
+      <qualifier name="TargetSize" value="256" />
+      <qualifier name="LayoutDirection" value="LTR" />
+      <qualifier name="DXFeatureLevel" value="DX9" />
+      <qualifier name="Configuration" value="" />
+      <qualifier name="AlternateForm" value="" />
+      <qualifier name="Platform" value="UAP" />
+    </default>
+    <indexer-config type="folder" foldernameAsQualifier="true" filenameAsQualifier="true" qualifierDelimiter="." />
+    <indexer-config type="resw" convertDotsToSlashes="true" initialPath="" />
+    <indexer-config type="resjson" initialPath="" />
+    <indexer-config type="PRI" />
+  </index>
+</resources>
