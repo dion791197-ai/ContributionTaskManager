@@ -28,7 +28,7 @@ public sealed partial class SettingsWindow : Window
         AppWindow.SetPresenter(presenter);
 
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
-        NativeWindow.ApplyRoundedCorners(WinRT.Interop.WindowNative.GetWindowHandle(this));
+        NativeWindow.PreferSystemRoundedCorners(WinRT.Interop.WindowNative.GetWindowHandle(this));
 
         if (MicaController.IsSupported())
         {

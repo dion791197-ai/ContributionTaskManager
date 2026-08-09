@@ -24,6 +24,9 @@ public sealed partial class MainWindow : Window
 {
     private static readonly TimeSpan CountDuration = TimeSpan.FromMilliseconds(550);
 
+    /// <summary>Corner radius of the glass card, and therefore of the window itself.</summary>
+    private const int CardCornerRadius = 16;
+
     private readonly ISettingsService _settings;
     private readonly UISettings _uiSettings = new();
 
@@ -100,8 +103,14 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
 
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        NativeWindow.ApplyRoundedCorners(hwnd);
+
+        // Resize hooks go on first: applying the region raises WM_SIZE, and the
+        // subclass is what keeps the region in step with later resizes.
         NativeWindow.EnableBorderlessResize(hwnd);
+
+        // Must match GlassCard.CornerRadius, otherwise the window either clips the
+        // card's corners or leaves slivers of backdrop outside them.
+        NativeWindow.ApplyRoundedRegion(hwnd, CardCornerRadius);
 
         TrySetBackdrop();
     }
