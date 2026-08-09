@@ -80,16 +80,18 @@ public sealed partial class MainWindow : Window
     {
         Title = "GitHub Goal";
 
-        // Frameless: keep the resize border (so the widget can be resized) but drop the
-        // caption bar entirely, then draw our own card inside.
+        // Truly frameless: no Win32 border and no caption bar, so the rounded glass card
+        // is the entire window. Resizing is reinstated in NativeWindow's WM_NCHITTEST
+        // hook, which reports resize edges without drawing any chrome for them.
         _presenter = OverlappedPresenter.Create();
-        _presenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
+        _presenter.SetBorderAndTitleBar(hasBorder: false, hasTitleBar: false);
         _presenter.IsMaximizable = false;
         _presenter.IsMinimizable = false;
         _presenter.IsAlwaysOnTop = _settings.Current.AlwaysOnTop;
         AppWindow.SetPresenter(_presenter);
 
-        ExtendsContentIntoTitleBar = true;
+        // Deliberately NOT setting ExtendsContentIntoTitleBar: with it true WinUI draws
+        // its own minimise/maximise/close overlay on top of our header.
 
         // A widget should not compete for space in Alt+Tab or the taskbar; the tray
         // icon is how it gets recalled.
@@ -97,7 +99,9 @@ public sealed partial class MainWindow : Window
 
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
 
-        NativeWindow.ApplyRoundedCorners(WinRT.Interop.WindowNative.GetWindowHandle(this));
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        NativeWindow.ApplyRoundedCorners(hwnd);
+        NativeWindow.EnableBorderlessResize(hwnd);
 
         TrySetBackdrop();
     }
