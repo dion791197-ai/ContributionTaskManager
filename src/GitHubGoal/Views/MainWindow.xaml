@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Window
     x:Class="GitHubGoal.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -8,8 +8,10 @@
     <Grid x:Name="RootGrid">
 
         <!-- ================= the glass card ================= -->
+        <!-- CornerRadius must match MainWindow.CardCornerRadius, i.e. the radius DWM
+             rounds the window with. Anything larger exposes backdrop in the corners. -->
         <Border x:Name="GlassCard"
-                CornerRadius="16"
+                CornerRadius="8"
                 Background="{ThemeResource GlassCardBrush}"
                 BorderThickness="1"
                 BorderBrush="{ThemeResource GlassBorderBrush}">
@@ -17,13 +19,13 @@
             <Grid>
                 <!-- Specular sweep. Sits above the tint, below the content, and is
                      never hit-testable so it cannot swallow clicks. -->
-                <Border CornerRadius="15"
+                <Border CornerRadius="7"
                         IsHitTestVisible="False"
                         Background="{ThemeResource GlassSheenBrush}" />
 
                 <!-- Completion glow: a green rim that fades in when the goal is met. -->
                 <Border x:Name="CompletionGlow"
-                        CornerRadius="15"
+                        CornerRadius="7"
                         IsHitTestVisible="False"
                         Opacity="0"
                         BorderThickness="1">
@@ -34,7 +36,7 @@
                             <GradientStop Offset="1" Color="#1A3FB950" />
                         </LinearGradientBrush>
                     </Border.BorderBrush>
-                    <Border CornerRadius="14">
+                    <Border CornerRadius="6">
                         <Border.Background>
                             <RadialGradientBrush Center="0.5,1.05" RadiusX="0.85" RadiusY="0.7">
                                 <GradientStop Offset="0" Color="#382EA043" />

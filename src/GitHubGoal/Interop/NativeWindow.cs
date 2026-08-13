@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace GitHubGoal.Interop;
 
@@ -10,17 +10,13 @@ internal static class NativeWindow
 {
     // --- DWM ---------------------------------------------------------------
     private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
-    private const int DWMWCP_DONOTROUND = 1;
     private const int DWMWCP_ROUND = 2;
 
     // --- monitors ----------------------------------------------------------
     private const int MONITOR_DEFAULTTONEAREST = 2;
 
     // --- borderless resize -------------------------------------------------
-    private const int WM_NCCALCSIZE = 0x0083;
     private const int WM_NCHITTEST = 0x0084;
-    private const int WM_SIZE = 0x0005;
-    private const int WM_DPICHANGED = 0x02E0;
     private const int HTLEFT = 10;
     private const int HTRIGHT = 11;
     private const int HTTOP = 12;
@@ -38,89 +34,27 @@ internal static class NativeWindow
     /// </summary>
     private static readonly Dictionary<IntPtr, SubclassProc> ResizeSubclasses = [];
 
-    /// <summary>Corner radius per window, in logical pixels, so resizes can rebuild the region.</summary>
-    private static readonly Dictionary<IntPtr, int> CornerRadii = [];
-
     private delegate IntPtr SubclassProc(
         IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, UIntPtr subclassId, IntPtr refData);
 
     /// <summary>
-    /// Asks DWM to round the window with the system radius.
+    /// Asks DWM to round the window with the system radius (8 logical px on Windows 11).
     ///
-    /// For windows that keep their Win32 border: clipping those with a region would
-    /// cut the border itself at the corners. A no-op on Windows 10, where the window
-    /// simply stays square — acceptable for a settings dialog, unlike the widget.
+    /// This is the only workable way to round a WinUI 3 window. Clipping it with
+    /// SetWindowRgn is the obvious alternative and it does not work: WinUI 3 presents
+    /// through DirectComposition, and a legacy window region stops the window
+    /// compositing altogether. The symptom is confusing вЂ” the content still renders, so
+    /// PrintWindow captures a perfectly good widget, while nothing appears on screen.
+    ///
+    /// Whatever fills the window must use the same radius, or the corners show a sliver
+    /// of backdrop outside the card. See MainWindow's CardCornerRadius.
+    ///
+    /// A no-op on Windows 10, where the window simply stays square.
     /// </summary>
     public static void PreferSystemRoundedCorners(IntPtr hwnd)
     {
         var preference = DWMWCP_ROUND;
         _ = DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref preference, sizeof(int));
-    }
-
-    /// <summary>
-    /// Clips the window to a rounded rectangle.
-    ///
-    /// DWMWA_WINDOW_CORNER_PREFERENCE would be the tidy way to do this, but it only
-    /// exists on Windows 11 — on Windows 10 the call silently fails and the window
-    /// stays a hard-edged rectangle, which is exactly the frame this removes. A window
-    /// region works on both, so it is the one path rather than two.
-    ///
-    /// The trade-off is that a region is a hard 1-bit mask: the arcs are not
-    /// antialiased. At a 16 px radius on a dark card the stair-stepping is barely
-    /// visible, and it beats a square frame around a rounded card.
-    ///
-    /// DWM rounding is turned off explicitly so Windows 11 does not clip its own,
-    /// smaller radius on top of ours and flatten the corners we just drew.
-    /// </summary>
-    /// <param name="hwnd">Target window.</param>
-    /// <param name="radius">Corner radius in logical pixels; match the card's CornerRadius.</param>
-    public static void ApplyRoundedRegion(IntPtr hwnd, int radius)
-    {
-        CornerRadii[hwnd] = radius;
-
-        var preference = DWMWCP_DONOTROUND;
-        _ = DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref preference, sizeof(int));
-
-        RefreshRoundedRegion(hwnd);
-    }
-
-    private static void RefreshRoundedRegion(IntPtr hwnd)
-    {
-        if (!CornerRadii.TryGetValue(hwnd, out var radius) || !GetWindowRect(hwnd, out var rect))
-        {
-            return;
-        }
-
-        var width = rect.Width;
-        var height = rect.Height;
-
-        // Minimised windows report a zero or negative rect; a region built from one
-        // would hide the window when it comes back.
-        if (width <= 0 || height <= 0)
-        {
-            return;
-        }
-
-        var scaled = (int)Math.Round(radius * ScaleFor(hwnd));
-
-        // The ellipse cannot be larger than the box it rounds, or the window turns
-        // into a lozenge while being resized down.
-        var diameter = Math.Clamp(scaled * 2, 0, Math.Min(width, height));
-
-        // Right and bottom are exclusive, hence the +1.
-        var region = CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter);
-
-        if (region == IntPtr.Zero)
-        {
-            return;
-        }
-
-        // Windows takes ownership of the region on success, so it must not be deleted
-        // here; on failure it would leak, so clean it up ourselves.
-        if (SetWindowRgn(hwnd, region, bRedraw: true) == 0)
-        {
-            _ = DeleteObject(region);
-        }
     }
 
     /// <summary>
@@ -137,7 +71,7 @@ internal static class NativeWindow
     }
 
     /// <summary>
-    /// Cursor position in physical screen pixels — the same space AppWindow.Move uses,
+    /// Cursor position in physical screen pixels вЂ” the same space AppWindow.Move uses,
     /// so dragging stays correct across monitors with different scaling.
     /// </summary>
     public static (int X, int Y) CursorPosition()
@@ -151,12 +85,12 @@ internal static class NativeWindow
     }
 
     /// <summary>
-    /// Restores edge resizing on a window that has no Win32 border.
+    /// Widens the resize grab area inwards, over the widget's own content.
     ///
-    /// SetBorderAndTitleBar(hasBorder: false, ...) is what removes the visible frame,
-    /// but it also removes the non-client edges Windows would normally hit-test for
-    /// resizing. Subclassing WM_NCHITTEST puts the resize edges back without drawing
-    /// any chrome: the grab band sits just inside the window, over our own content.
+    /// The window keeps a Win32 frame so DWM will round it, but ExtendsContentIntoTitleBar
+    /// draws the card across that frame, leaving only a few pixels that read as
+    /// "grab here". Answering WM_NCHITTEST with the edge codes gives back a comfortable
+    /// band without drawing any chrome for it.
     /// </summary>
     /// <param name="hwnd">Target window.</param>
     /// <param name="grabThickness">Width of the grab band in logical pixels.</param>
@@ -169,25 +103,6 @@ internal static class NativeWindow
         // pointer and Windows will call it long after we return.
         var callback = new SubclassProc((h, msg, wParam, lParam, _, _) =>
         {
-            // Collapse the non-client area into nothing, so the client area is the whole
-            // window. Without this Windows still paints a caption strip along the top
-            // edge even with hasTitleBar: false, which shows as a light bar above the card.
-            if (msg == WM_NCCALCSIZE && wParam != IntPtr.Zero)
-            {
-                return IntPtr.Zero;
-            }
-
-            // The region is pixel geometry, so it has to be rebuilt whenever the window
-            // changes size or moves to a monitor with a different scale. Doing it here
-            // rather than on a XAML SizeChanged keeps the corners rounded during the
-            // drag itself instead of snapping back a frame later.
-            if (msg is WM_SIZE or WM_DPICHANGED)
-            {
-                var result = DefSubclassProc(h, msg, wParam, lParam);
-                RefreshRoundedRegion(h);
-                return result;
-            }
-
             if (msg != WM_NCHITTEST)
             {
                 return DefSubclassProc(h, msg, wParam, lParam);
@@ -306,16 +221,6 @@ internal static class NativeWindow
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern int SetWindowRgn(IntPtr hwnd, IntPtr region, [MarshalAs(UnmanagedType.Bool)] bool bRedraw);
-
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int ellipseWidth, int ellipseHeight);
-
-    [DllImport("gdi32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool DeleteObject(IntPtr handle);
 
     [DllImport("comctl32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

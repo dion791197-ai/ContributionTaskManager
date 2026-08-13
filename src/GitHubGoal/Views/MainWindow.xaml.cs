@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using GitHubGoal.Core.Models;
 using GitHubGoal.Core.Services;
 using GitHubGoal.Interop;
@@ -24,8 +24,12 @@ public sealed partial class MainWindow : Window
 {
     private static readonly TimeSpan CountDuration = TimeSpan.FromMilliseconds(550);
 
-    /// <summary>Corner radius of the glass card, and therefore of the window itself.</summary>
-    private const int CardCornerRadius = 16;
+    /// <summary>
+    /// Kept in sync with GlassCard's CornerRadius in XAML, and equal to the radius DWM
+    /// rounds the window with (8 logical px on Windows 11). A larger card radius would
+    /// leave slivers of backdrop in the corners, which is what made them look blunt.
+    /// </summary>
+    private const int CardCornerRadius = 8;
 
     private readonly ISettingsService _settings;
     private readonly UISettings _uiSettings = new();
@@ -83,18 +87,29 @@ public sealed partial class MainWindow : Window
     {
         Title = "GitHub Goal";
 
-        // Truly frameless: no Win32 border and no caption bar, so the rounded glass card
-        // is the entire window. Resizing is reinstated in NativeWindow's WM_NCHITTEST
-        // hook, which reports resize edges without drawing any chrome for them.
         _presenter = OverlappedPresenter.Create();
-        _presenter.SetBorderAndTitleBar(hasBorder: false, hasTitleBar: false);
-        _presenter.IsMaximizable = false;
-        _presenter.IsMinimizable = false;
-        _presenter.IsAlwaysOnTop = _settings.Current.AlwaysOnTop;
         AppWindow.SetPresenter(_presenter);
 
-        // Deliberately NOT setting ExtendsContentIntoTitleBar: with it true WinUI draws
-        // its own minimise/maximise/close overlay on top of our header.
+        // Every presenter property is set *after* SetPresenter. Configuring a detached
+        // presenter silently does nothing: done the other way round the widget keeps its
+        // Win32 border and caption strip and never goes always-on-top, which is what the
+        // "frame around the card" turned out to be.
+        //
+        // The border is deliberately kept. Windows 11 only rounds windows that still have
+        // a standard frame, and rounding has to come from DWM: SetWindowRgn stops WinUI
+        // compositing altogether, and WinUI 3 cannot render a transparent window, so
+        // anything the card does not cover is painted opaque black.
+        //
+        // hasTitleBar: false removes the caption and its buttons; ExtendsContentIntoTitleBar
+        // below then stretches the XAML content over the frame, so the card reaches the
+        // window edge and the rounded silhouette is DWM's.
+        _presenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
+        _presenter.IsMaximizable = false;
+        _presenter.IsMinimizable = false;
+        _presenter.IsResizable = true;
+        _presenter.IsAlwaysOnTop = _settings.Current.AlwaysOnTop;
+
+        ExtendsContentIntoTitleBar = true;
 
         // A widget should not compete for space in Alt+Tab or the taskbar; the tray
         // icon is how it gets recalled.
@@ -104,13 +119,9 @@ public sealed partial class MainWindow : Window
 
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
 
-        // Resize hooks go on first: applying the region raises WM_SIZE, and the
-        // subclass is what keeps the region in step with later resizes.
         NativeWindow.EnableBorderlessResize(hwnd);
 
-        // Must match GlassCard.CornerRadius, otherwise the window either clips the
-        // card's corners or leaves slivers of backdrop outside them.
-        NativeWindow.ApplyRoundedRegion(hwnd, CardCornerRadius);
+        NativeWindow.PreferSystemRoundedCorners(hwnd);
 
         TrySetBackdrop();
     }
@@ -497,7 +508,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        // A single restrained pulse of the card — no confetti.
+        // A single restrained pulse of the card вЂ” no confetti.
         var storyboard = new Storyboard();
 
         var pulse = new DoubleAnimationUsingKeyFrames();
