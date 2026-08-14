@@ -23,6 +23,9 @@ internal static class NativeWindow
     /// </summary>
     private const int FrameInset = 0;
 
+    /// <summary>Rows clipped off the top, to drop the system's 1px window border.</summary>
+    private const int TopBorderTrim = 1;
+
     /// <summary>Corner radius per window, in logical pixels, so resizes can rebuild the region.</summary>
     private static readonly Dictionary<IntPtr, int> CornerRadii = [];
 
@@ -89,8 +92,13 @@ internal static class NativeWindow
         // while it is being dragged smaller.
         var diameter = Math.Clamp(scaled * 2, 0, Math.Min(width, height));
 
+        // Windows paints a one-pixel window border along the top edge, and collapsing the
+        // non-client area in WM_NCCALCSIZE puts it inside the window rather than removing
+        // it — a bright #E3E3E3 line straight across the card. The region is the only
+        // thing that can take it back off, so the clip starts one row down.
+        //
         // CreateRoundRectRgn's right and bottom edges are exclusive.
-        var region = CreateRoundRectRgn(0, 0, width + 1, height + 1, diameter, diameter);
+        var region = CreateRoundRectRgn(0, TopBorderTrim, width + 1, height + 1, diameter, diameter);
 
         if (region == IntPtr.Zero)
         {
