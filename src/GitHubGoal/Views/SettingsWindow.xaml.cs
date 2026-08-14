@@ -23,12 +23,17 @@ public sealed partial class SettingsWindow : Window
         SetTitleBar(TitleBar);
 
         var presenter = OverlappedPresenter.Create();
-        presenter.IsMaximizable = false;
-        presenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
         AppWindow.SetPresenter(presenter);
 
+        // Configured after SetPresenter: a detached presenter silently ignores these.
+        presenter.IsMaximizable = false;
+        presenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
+
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
-        NativeWindow.PreferSystemRoundedCorners(WinRT.Interop.WindowNative.GetWindowHandle(this));
+
+        // Matches SettingsCard's CornerRadius in XAML. See NativeWindow.ApplyRoundedRegion
+        // for why the shape comes from a region rather than from DWM.
+        NativeWindow.ApplyRoundedRegion(WinRT.Interop.WindowNative.GetWindowHandle(this), 12);
 
         if (MicaController.IsSupported())
         {

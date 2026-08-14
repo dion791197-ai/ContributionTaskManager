@@ -8,24 +8,21 @@
     <Grid x:Name="RootGrid">
 
         <!-- ================= the glass card ================= -->
-        <!-- CornerRadius must match MainWindow.CardCornerRadius, i.e. the radius DWM
-             rounds the window with. Anything larger exposes backdrop in the corners. -->
         <Border x:Name="GlassCard"
-                CornerRadius="8"
+                CornerRadius="12"
                 Background="{ThemeResource GlassCardBrush}"
-                BorderThickness="1"
-                BorderBrush="{ThemeResource GlassBorderBrush}">
+                BorderThickness="0">
 
             <Grid>
                 <!-- Specular sweep. Sits above the tint, below the content, and is
                      never hit-testable so it cannot swallow clicks. -->
-                <Border CornerRadius="7"
+                <Border CornerRadius="12"
                         IsHitTestVisible="False"
                         Background="{ThemeResource GlassSheenBrush}" />
 
                 <!-- Completion glow: a green rim that fades in when the goal is met. -->
                 <Border x:Name="CompletionGlow"
-                        CornerRadius="7"
+                        CornerRadius="12"
                         IsHitTestVisible="False"
                         Opacity="0"
                         BorderThickness="1">
@@ -36,7 +33,7 @@
                             <GradientStop Offset="1" Color="#1A3FB950" />
                         </LinearGradientBrush>
                     </Border.BorderBrush>
-                    <Border CornerRadius="6">
+                    <Border CornerRadius="12">
                         <Border.Background>
                             <RadialGradientBrush Center="0.5,1.05" RadiusX="0.85" RadiusY="0.7">
                                 <GradientStop Offset="0" Color="#382EA043" />

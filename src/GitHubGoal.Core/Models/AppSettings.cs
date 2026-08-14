@@ -50,9 +50,9 @@ public sealed class AppSettings
 
     public double? WindowY { get; set; }
 
-    public double WindowWidth { get; set; } = 360;
+    public double WindowWidth { get; set; } = 320;
 
-    public double WindowHeight { get; set; } = 220;
+    public double WindowHeight { get; set; } = 196;
 
     /// <summary>
     /// GitHub OAuth App client ID. Public by design for the device flow — there is no

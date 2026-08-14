@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using GitHubGoal.Core.Models;
 using GitHubGoal.Core.Services;
 using GitHubGoal.Interop;
@@ -25,11 +25,11 @@ public sealed partial class MainWindow : Window
     private static readonly TimeSpan CountDuration = TimeSpan.FromMilliseconds(550);
 
     /// <summary>
-    /// Kept in sync with GlassCard's CornerRadius in XAML, and equal to the radius DWM
-    /// rounds the window with (8 logical px on Windows 11). A larger card radius would
-    /// leave slivers of backdrop in the corners, which is what made them look blunt.
+    /// The widget's corner radius. Applied twice over: as the window region that clips
+    /// the silhouette, and as GlassCard's CornerRadius in XAML so the antialiased curve
+    /// sits just inside that hard clip. The two must stay equal.
     /// </summary>
-    private const int CardCornerRadius = 8;
+    private const int CardCornerRadius = 12;
 
     private readonly ISettingsService _settings;
     private readonly UISettings _uiSettings = new();
@@ -91,18 +91,14 @@ public sealed partial class MainWindow : Window
         AppWindow.SetPresenter(_presenter);
 
         // Every presenter property is set *after* SetPresenter. Configuring a detached
-        // presenter silently does nothing: done the other way round the widget keeps its
-        // Win32 border and caption strip and never goes always-on-top, which is what the
+        // presenter silently does nothing, and done the other way round the widget kept
+        // its border and caption strip and never went always-on-top — which is what the
         // "frame around the card" turned out to be.
         //
-        // The border is deliberately kept. Windows 11 only rounds windows that still have
-        // a standard frame, and rounding has to come from DWM: SetWindowRgn stops WinUI
-        // compositing altogether, and WinUI 3 cannot render a transparent window, so
-        // anything the card does not cover is painted opaque black.
-        //
-        // hasTitleBar: false removes the caption and its buttons; ExtendsContentIntoTitleBar
-        // below then stretches the XAML content over the frame, so the card reaches the
-        // window edge and the rounded silhouette is DWM's.
+        // hasBorder stays true only to keep WS_THICKFRAME, which is what lets Windows
+        // start a resize from the edges EnableBorderlessResize reports. The frame draws
+        // nothing: WM_NCCALCSIZE collapses it so the client covers the whole window.
+        // hasTitleBar: false removes the caption and its buttons.
         _presenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
         _presenter.IsMaximizable = false;
         _presenter.IsMinimizable = false;
@@ -121,7 +117,9 @@ public sealed partial class MainWindow : Window
 
         NativeWindow.EnableBorderlessResize(hwnd);
 
-        NativeWindow.PreferSystemRoundedCorners(hwnd);
+        // The shape comes from a window region, not from DWM: this machine class runs
+        // Windows 10, where DWMWA_WINDOW_CORNER_PREFERENCE does nothing at all.
+        NativeWindow.ApplyRoundedRegion(hwnd, CardCornerRadius);
 
         TrySetBackdrop();
     }
@@ -508,7 +506,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        // A single restrained pulse of the card вЂ” no confetti.
+        // A single restrained pulse of the card — no confetti.
         var storyboard = new Storyboard();
 
         var pulse = new DoubleAnimationUsingKeyFrames();
