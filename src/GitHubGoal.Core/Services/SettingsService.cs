@@ -118,6 +118,13 @@ public sealed class SettingsService : ISettingsService
             settings.Accent = AccentChoice.GitHubGreen;
         }
 
+        // An unrecognised tier means a downgrade or a hand-edited file; fall back to the
+        // tier that grants the least rather than the most.
+        if (!Enum.IsDefined(settings.CachedPlan))
+        {
+            settings.CachedPlan = SubscriptionPlan.Free;
+        }
+
         return settings;
     }
 }

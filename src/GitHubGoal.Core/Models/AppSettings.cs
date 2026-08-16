@@ -60,6 +60,19 @@ public sealed class AppSettings
     /// </summary>
     public string? OAuthClientId { get; set; }
 
+    // --- subscription -----------------------------------------------------
+
+    /// <summary>
+    /// Last resolved tier, cached so the UI is not briefly wrong at startup.
+    ///
+    /// A cache, not an authority: this file is user-writable, so nothing that must
+    /// actually be paid for should trust it. See EntitlementService.
+    /// </summary>
+    public SubscriptionPlan CachedPlan { get; set; } = SubscriptionPlan.Free;
+
+    /// <summary>When the cached tier lapses; null means it does not expire.</summary>
+    public DateTimeOffset? CachedPlanExpiresAt { get; set; }
+
     /// <summary>Remembered so the header can render before the first network call returns.</summary>
     public string? LastKnownLogin { get; set; }
 

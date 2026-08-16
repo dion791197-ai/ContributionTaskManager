@@ -2,7 +2,9 @@
 <Window
     x:Class="GitHubGoal.Views.SettingsWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:GitHubGoal.Core.Models"
+    xmlns:util="using:GitHubGoal.Utilities">
 
     <Grid x:Name="RootGrid" RowDefinitions="Auto,*">
 
@@ -28,6 +30,86 @@
 
         <ScrollViewer Grid.Row="1" Padding="16,0,16,16">
             <StackPanel Spacing="18">
+
+                <!-- ==================== Subscription ==================== -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Subscription"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource TextMutedBrush}" />
+
+                    <Border Padding="14"
+                            CornerRadius="8"
+                            Background="{ThemeResource TrackBrush}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource DividerBrush}">
+                        <StackPanel Spacing="12">
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Text="{x:Bind ViewModel.CurrentPlanName, Mode=OneWay}" />
+                                    <TextBlock FontSize="11"
+                                               TextWrapping="Wrap"
+                                               Foreground="{ThemeResource TextMutedBrush}"
+                                               Text="{x:Bind ViewModel.CurrentPlanDescription, Mode=OneWay}" />
+                                </StackPanel>
+
+                                <Button Grid.Column="1"
+                                        Content="Remove"
+                                        FontSize="12"
+                                        CornerRadius="6"
+                                        Command="{x:Bind ViewModel.RemoveLicenseCommand}"
+                                        IsEnabled="{x:Bind ViewModel.IsPaidPlan, Mode=OneWay}" />
+                            </Grid>
+
+                            <!-- The tiers, listed for orientation. What each one unlocks
+                                 is not decided yet, so only names and blurbs appear. -->
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.Plans}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PlanInfo">
+                                        <Grid Margin="0,0,0,6" ColumnDefinitions="72,*">
+                                            <TextBlock FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{ThemeResource TextSecondaryBrush}"
+                                                       Text="{x:Bind Name}" />
+                                            <TextBlock Grid.Column="1"
+                                                       FontSize="11"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="{ThemeResource TextMutedBrush}"
+                                                       Text="{x:Bind Description}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Licence key"
+                                           FontSize="12"
+                                           Foreground="{ThemeResource TextSecondaryBrush}" />
+
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Text="{x:Bind ViewModel.LicenseKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="XXXX-XXXX-XXXX-XXXX"
+                                             FontSize="12"
+                                             AutomationProperties.Name="Licence key" />
+                                    <Button Grid.Column="1"
+                                            Content="Activate"
+                                            FontSize="12"
+                                            CornerRadius="6"
+                                            Command="{x:Bind ViewModel.ActivateLicenseCommand}" />
+                                </Grid>
+
+                                <TextBlock FontSize="11"
+                                           TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextMutedBrush}"
+                                           Text="{x:Bind ViewModel.LicenseMessage, Mode=OneWay}"
+                                           Visibility="{x:Bind util:Show.WhenPresent(ViewModel.LicenseMessage), Mode=OneWay}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 
                 <!-- ==================== GitHub ==================== -->
                 <StackPanel Spacing="8">

@@ -9,19 +9,27 @@ namespace GitHubGoal.ViewModels;
 /// Backs the Settings window. Every setter writes through to disk immediately and
 /// raises <see cref="SettingsChanged"/> so the widget can react live.
 /// </summary>
-public sealed partial class SettingsViewModel : ObservableObject
+public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ISettingsService _settings;
     private readonly IStartupService _startup;
     private readonly IContributionService _contributions;
+    private readonly IEntitlementService _entitlements;
 
     private bool _loading;
 
-    public SettingsViewModel(ISettingsService settings, IStartupService startup, IContributionService contributions)
+    public SettingsViewModel(
+        ISettingsService settings,
+        IStartupService startup,
+        IContributionService contributions,
+        IEntitlementService entitlements)
     {
         _settings = settings;
         _startup = startup;
         _contributions = contributions;
+        _entitlements = entitlements;
+
+        _entitlements.PlanChanged += OnPlanChanged;
 
         _loading = true;
 
@@ -97,6 +105,71 @@ public sealed partial class SettingsViewModel : ObservableObject
         SettingsChanged?.Invoke();
     }
 
+    // --- subscription -----------------------------------------------------
+
+    /// <summary>The three tiers, for the comparison list in Settings.</summary>
+    public IReadOnlyList<PlanInfo> Plans => PlanCatalog.All;
+
+    public SubscriptionPlan CurrentPlan => _entitlements.CurrentPlan;
+
+    public string CurrentPlanName => PlanCatalog.For(CurrentPlan).Name;
+
+    public string CurrentPlanDescription => PlanCatalog.For(CurrentPlan).Description;
+
+    public bool IsPaidPlan => CurrentPlan != SubscriptionPlan.Free;
+
+    [ObservableProperty]
+    private string _licenseKey = string.Empty;
+
+    [ObservableProperty]
+    private string? _licenseMessage;
+
+    [RelayCommand]
+    private async Task ActivateLicenseAsync()
+    {
+        if (string.IsNullOrWhiteSpace(LicenseKey))
+        {
+            LicenseMessage = "Enter a licence key.";
+            return;
+        }
+
+        try
+        {
+            var plan = await _entitlements.ActivateAsync(LicenseKey);
+
+            // No validator is wired up yet, so every key resolves to Free. Say so plainly
+            // rather than reporting a success that did not happen.
+            LicenseMessage = plan == SubscriptionPlan.Free
+                ? "That key was not accepted."
+                : $"{PlanCatalog.For(plan).Name} activated.";
+
+            if (plan != SubscriptionPlan.Free)
+            {
+                LicenseKey = string.Empty;
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LicenseMessage = "Could not verify the key right now.";
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveLicense()
+    {
+        _entitlements.Deactivate();
+        LicenseMessage = "Licence removed.";
+    }
+
+    private void OnPlanChanged()
+    {
+        OnPropertyChanged(nameof(CurrentPlan));
+        OnPropertyChanged(nameof(CurrentPlanName));
+        OnPropertyChanged(nameof(CurrentPlanDescription));
+        OnPropertyChanged(nameof(IsPaidPlan));
+        SettingsChanged?.Invoke();
+    }
+
     // --- persistence ------------------------------------------------------
 
     partial void OnDailyGoalChanged(int value) => Persist(s => s.DailyGoal = Math.Max(GoalProgress.MinimumGoal, value));
@@ -127,6 +200,15 @@ public sealed partial class SettingsViewModel : ObservableObject
 
         _startup.SetEnabled(value);
         Persist(s => s.LaunchAtStartup = value);
+    }
+
+    /// <summary>
+    /// Releases the entitlement subscription. The Settings window is opened and closed
+    /// repeatedly, and the service outlives it, so the handler would otherwise accumulate.
+    /// </summary>
+    public void Dispose()
+    {
+        _entitlements.PlanChanged -= OnPlanChanged;
     }
 
     private void Persist(Action<AppSettings> apply)

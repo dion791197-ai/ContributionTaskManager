@@ -19,6 +19,7 @@ public partial class App : Application
     private CredentialService _credentials = null!;
     private ContributionService _contributions = null!;
     private StartupService _startup = null!;
+    private EntitlementService _entitlements = null!;
     private MainViewModel _viewModel = null!;
 
     private MainWindow? _window;
@@ -40,6 +41,13 @@ public partial class App : Application
         _contributions = new ContributionService(
             new GitHubService(_http),
             _credentials,
+            _settings);
+
+        // Subscription tiers exist but gate nothing yet; FeatureMatrix is the one place
+        // that changes when they do.
+        _entitlements = new EntitlementService(
+            new CredentialLicenseStore(_credentials),
+            new OfflineLicenseValidator(),
             _settings);
 
         _viewModel = new MainViewModel(
@@ -74,6 +82,10 @@ public partial class App : Application
         _ = _viewModel.InitializeAsync().ContinueWith(
             _ => _window?.DispatcherQueue.TryEnqueue(UpdateTrayTooltip),
             TaskScheduler.Default);
+
+        // Re-resolves the tier from the stored licence in the background; failures leave
+        // the cached tier in place rather than interrupting startup.
+        _ = _entitlements.RefreshAsync();
     }
 
     private MainWindow CreateWindow()
@@ -167,7 +179,7 @@ public partial class App : Application
             return;
         }
 
-        var viewModel = new SettingsViewModel(_settings, _startup, _contributions);
+        var viewModel = new SettingsViewModel(_settings, _startup, _contributions, _entitlements);
         _settingsWindow = new SettingsWindow(viewModel);
 
         viewModel.SettingsChanged += OnSettingsChanged;
@@ -175,6 +187,7 @@ public partial class App : Application
         _settingsWindow.Closed += (_, _) =>
         {
             viewModel.SettingsChanged -= OnSettingsChanged;
+            viewModel.Dispose();
             _settingsWindow = null;
         };
 
