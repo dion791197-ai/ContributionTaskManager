@@ -254,7 +254,7 @@
                             </Border>
 
                             <StackPanel Orientation="Horizontal" Spacing="7">
-                                <Button Content="Sign in with GitHub"
+                                <Button Content="Continue with GitHub"
                                         FontSize="12"
                                         Padding="12,5"
                                         CornerRadius="7"

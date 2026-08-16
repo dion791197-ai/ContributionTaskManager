@@ -36,23 +36,41 @@ dotnet build src\GitHubGoal\GitHubGoal.csproj -c Release
 .\src\GitHubGoal\bin\Release\net8.0-windows10.0.19041.0\win-x64\GitHubGoal.exe
 ```
 
-### 2. Create a GitHub OAuth App
+### 2. Create a GitHub OAuth App (one time, per build)
 
 The widget signs in with GitHub's **device flow**, which needs a client ID but *no
 client secret* — the right choice for a desktop app, since a secret shipped inside a
-binary is not a secret.
+binary is not a secret. A client ID is not a secret either, so it is fine to bake one
+into the build or set it once via an environment variable — end users then never see a
+setup step at all; they just click **Continue with GitHub**.
 
 1. Go to **github.com → Settings → Developer settings → OAuth Apps → New OAuth App**
 2. Fill in any name and homepage URL (they are not used by the device flow)
 3. After creating it, tick **Enable Device Flow** and save
 4. Copy the **Client ID**
 
+Then give the app that ID in *either* of these ways:
+
+- Set the environment variable `GITHUBGOAL_OAUTH_CLIENT_ID` (System Properties →
+  Environment Variables, or `setx GITHUBGOAL_OAUTH_CLIENT_ID "Iv1...."`) — picked up
+  automatically, no rebuild needed, and it is what most people should use.
+- Or hardcode it as `GitHubOAuthConfig.DefaultClientId` in
+  `src/GitHubGoal.Core/Services/GitHubOAuthConfig.cs` before building — for a build you
+  intend to hand to someone else, so it works for them with nothing to configure.
+
+Settings (⚙ → GitHub) still has a Client ID field; anything typed there overrides both
+of the above, but it is now optional rather than a required first step.
+
 ### 3. Connect
 
-Open the widget's **Settings** (⚙), paste the Client ID, then click
-**Sign in with GitHub** on the widget. It shows an eight-character code — enter it at
-`github.com/login/device`. The resulting token goes straight into Windows Credential
-Manager.
+Click **Continue with GitHub** on the widget. It shows an eight-character code —
+approve it at `github.com/login/device`. The resulting token goes straight into
+Windows Credential Manager, and the widget returns to the dashboard automatically once
+GitHub confirms the approval — no separate "registration" screen.
+
+On the next launch, or after closing and reopening the widget, a valid token restores
+the session immediately; the sign-in card only appears again after **Disconnect** in
+Settings or a token that GitHub has revoked.
 
 ## How it works
 
@@ -84,8 +102,12 @@ every refresh so changing it in Windows takes effect immediately.
 | What | Where |
 |------|-------|
 | GitHub access token | Windows Credential Manager (`GitHubGoal:AccessToken`) |
-| OAuth Client ID | `%LOCALAPPDATA%\GitHubGoal\settings.json` — public by design |
+| OAuth Client ID | Env var, compiled-in default, or `settings.json` — public by design, not a secret |
 | Everything else | Same settings file; contains no secrets |
+
+Scope requested is `read:user` only — enough to read the profile and the contribution
+calendar. Nothing broader (no `repo`, no `user:email`) is asked for, because nothing in
+the widget uses more than that.
 
 The token is never logged, never displayed, and never written to disk in plain text.
 `CredentialService` uses the advapi32 credential API rather than WinRT's

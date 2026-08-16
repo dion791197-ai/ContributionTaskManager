@@ -100,11 +100,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private string? _verificationUri;
 
     /// <summary>
-    /// Seeded with the invitation copy rather than left null: x:Bind's FallbackValue
+    /// Shown on the sign-in card whenever nothing more specific is happening.
+    ///
+    /// AuthStatus is seeded with this rather than left null: x:Bind's FallbackValue
     /// only applies when a binding fails, not when it resolves to null.
     /// </summary>
+    private const string InvitationCopy = "Connect your GitHub account to track daily contributions.";
+
     [ObservableProperty]
-    private string? _authStatus = "Connect your GitHub account to track daily contributions.";
+    private string? _authStatus = InvitationCopy;
 
     // --- derived display values -------------------------------------------
 
@@ -219,11 +223,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public async Task SignInAsync()
     {
-        var clientId = _settings.Current.OAuthClientId;
+        // Settings override > GITHUBGOAL_OAUTH_CLIENT_ID > the build's compiled-in
+        // default, so a properly configured build needs nothing from the user here —
+        // this is the whole "Continue with GitHub, no extra screen" flow.
+        var clientId = GitHubOAuthConfig.Resolve(_settings.Current.OAuthClientId);
 
-        if (string.IsNullOrWhiteSpace(clientId))
+        if (clientId is null)
         {
-            AuthStatus = "Add your OAuth Client ID in Settings first.";
+            AuthStatus = "GitHub sign-in isn't set up yet. Add a Client ID in Settings.";
             IsAuthorizing = true;
             return;
         }
@@ -257,7 +264,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (GitHubException ex)
         {
-            AuthStatus = ex.UserMessage == "Unable to update" ? ex.Message : ex.UserMessage;
+            AuthStatus = ex.UserMessage;
             UserCode = null;
         }
         catch (OperationCanceledException)
@@ -273,7 +280,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _authCts?.Cancel();
         IsAuthorizing = false;
         UserCode = null;
-        AuthStatus = null;
+        AuthStatus = InvitationCopy;
     }
 
     public void SignOut()

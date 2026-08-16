@@ -39,6 +39,9 @@ public sealed class GitHubException : Exception
         GitHubErrorKind.ServiceUnavailable => "GitHub is unavailable",
         GitHubErrorKind.MalformedResponse => "Unexpected response from GitHub",
         GitHubErrorKind.NotConfigured => "Not signed in",
+        GitHubErrorKind.AuthorizationPending => "Waiting for approval on GitHub",
+        GitHubErrorKind.AuthorizationDeclined => "Sign-in was cancelled",
+        GitHubErrorKind.AuthorizationExpired => "That code expired — try again",
         _ => "Unable to update",
     };
 

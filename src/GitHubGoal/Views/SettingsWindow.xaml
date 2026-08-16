@@ -137,7 +137,7 @@
                             </Grid>
 
                             <StackPanel Spacing="4">
-                                <TextBlock Text="OAuth Client ID"
+                                <TextBlock Text="OAuth Client ID (optional)"
                                            FontSize="12"
                                            Foreground="{ThemeResource TextSecondaryBrush}" />
                                 <TextBox Text="{x:Bind ViewModel.OauthClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -147,7 +147,7 @@
                                 <TextBlock FontSize="11"
                                            TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextMutedBrush}"
-                                           Text="Create an OAuth App at github.com/settings/developers and enable device flow. Only the Client ID is needed — there is no secret to store." />
+                                           Text="Leave this blank to use the app's built-in Client ID. Only set it here to point at a different GitHub OAuth App than the one this build ships with." />
                             </StackPanel>
                         </StackPanel>
                     </Border>
